@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Attendance | {{ subject['subject_name'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-left">
+            <a href="{{ url_for('teacher_dashboard') }}" class="btn-icon">🏠</a>
+            <span class="welcome-text">📋 Attendance Records</span>
+        </div>
+        <div class="navbar-right">
+            <a href="{{ url_for('logout') }}" class="btn">🚪 Logout</a>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <a href="{{ url_for('teacher_dashboard') }}" class="back-btn">← Back to Dashboard</a>
+        
+        <h2>📊 Attendance Records for {{ subject['subject_name'] }}</h2>
+        <p style="color: #666; margin-bottom: 20px;">
+            <strong>Subject Code:</strong> {{ subject['subject_code'] }} | 
+            <strong>Year:</strong> {{ subject['year'] }} | 
+            <strong>Branch:</strong> {{ subject['branch'] }}
+        </p>
+        
+        {% if attendance_records %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Roll No</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in attendance_records %}
+                <tr>
+                    <td><strong>{{ record['name'] }}</strong></td>
+                    <td>{{ record['roll_no'] }}</td>
+                    <td>{{ record['date'] }}</td>
+                    <td class="{% if record['status'] == 'Present' %}present{% else %}absent{% endif %}">
+                        {{ record['status'] }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; padding: 40px; color: #999; background: white; border-radius: 12px;">
+            📭 No attendance records found for this subject.
+        </p>
+        {% endif %}
+    </div>
+</body>
+</html>

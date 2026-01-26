@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ subject['subject_name'] }} - Class Details</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="navbar-left">
+      <a href="{{ url_for('teacher_dashboard') }}" class="btn-icon">🏠</a>
+      <span class="welcome-text">{{ subject['subject_name'] }}</span>
+    </div>
+    <div class="navbar-right">
+      <a href="{{ url_for('add_student') }}" class="btn">👩‍🎓 Add Student</a>
+      <a href="{{ url_for('add_subject_form') }}" class="btn">➕ Add Subject</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>{{ subject['subject_name'] }} ({{ subject['year'] }} - {{ subject['branch'] }})</h1>
+
+    <h2>Students in this Class</h2>
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Roll No</th>
+          <th>Year</th>
+          <th>Branch</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+        <tr>
+          <td>{{ student['id'] }}</td>
+          <td>{{ student['name'] }}</td>
+          <td>{{ student['roll_no'] }}</td>
+          <td>{{ student['year'] }}</td>
+          <td>{{ student['branch'] }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align:center;">No students yet. Add one below 👇</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <hr>
+    <h3>Add Student (Quick)</h3>
+    <form method="POST" action="{{ url_for('add_student') }}">
+      <input type="hidden" name="subject_id" value="{{ subject['id'] }}">
+      <input type="text" name="name" placeholder="Student Name" required>
+      <input type="text" name="roll_no" placeholder="Roll No" required>
+      <input type="text" name="year" placeholder="Year" required>
+      <input type="text" name="branch" placeholder="Branch" required>
+      <button type="submit" class="btn">Add Student</button>
+    </form>
+  </div>
+</body>
+</html>

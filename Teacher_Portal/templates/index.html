@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkMe - Smart GeoFencing Attendance</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <i class="fas fa-location-crosshairs logo-icon"></i>
+        <span>Mark<span class="logo-highlight">Me</span></span>
+      </div>
+
+      <ul class="nav-menu">
+        <li><a href="#home" class="active">Home</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+
+      <button class="btn-nav" onclick="scrollToLogin()">
+        <i class="fas fa-rocket"></i> Get Started
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section id="home" class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+
+        <div class="badge">
+          <i class="fas fa-globe"></i>
+          <span>GeoFencing Attendance System</span>
+        </div>
+
+        <h1 class="hero-title">
+          Smart <span class="gradient-text">Geo-Fencing</span><br>
+          Attendance Management
+        </h1>
+
+        <p class="hero-desc">
+          MarkMe uses advanced GPS and GeoFencing technology to verify student presence
+          inside the classroom zone. No biometrics, no hardware — just accurate and secure
+          location-based attendance tracking in real time.
+        </p>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <h3>99%</h3>
+            <p>Location Accuracy</p>
+          </div>
+          <div class="stat-item">
+            <h3>1500+</h3>
+            <p>Active Students</p>
+          </div>
+          <div class="stat-item">
+            <h3>24/7</h3>
+            <p>Cloud Access</p>
+          </div>
+        </div>
+
+        <!-- LOGIN OPTIONS -->
+        <div class="login-section">
+          <h2 class="login-title">Choose Your Portal</h2>
+
+          <div class="login-cards">
+
+            <!-- TEACHER LOGIN -->
+            <div class="login-card teacher-card"
+                 onclick="window.location.href='{{ url_for('teacher_login') }}'">
+
+              <div class="card-header">
+                <div class="card-icon">
+                  <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="card-badge">For Teachers</div>
+              </div>
+
+              <h3>Teacher Portal</h3>
+              <p>Start attendance with GeoFencing, monitor student locations, and generate reports.</p>
+
+              <ul class="card-features">
+                <li><i class="fas fa-check"></i> Start Geo-Fenced Attendance</li>
+                <li><i class="fas fa-check"></i> Live Student Location Fetch</li>
+                <li><i class="fas fa-check"></i> Automated Reports</li>
+              </ul>
+
+              <button class="card-btn">
+                Login as Teacher <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+
+            <!-- STUDENT LOGIN -->
+            <div class="login-card student-card"
+                 onclick="window.location.href='{{ url_for('student_login') }}'">
+
+              <div class="card-header">
+                <div class="card-icon">
+                  <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="card-badge">For Students</div>
+              </div>
+
+              <h3>Student Portal</h3>
+              <p>Mark attendance automatically when you are inside the classroom GeoFence.</p>
+
+              <ul class="card-features">
+                <li><i class="fas fa-check"></i> Auto Location Detection</li>
+                <li><i class="fas fa-check"></i> Real-Time Attendance Status</li>
+                <li><i class="fas fa-check"></i> Attendance Analytics</li>
+              </ul>
+
+              <button class="card-btn">
+                Login as Student <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE VISUAL -->
+      <div class="hero-visual">
+        <div class="fingerprint-circle">
+          <div class="circle-glow"></div>
+          <i class="fas fa-location-dot fingerprint-icon"></i>
+          <div class="scan-effect"></div>
+        </div>
+
+        <div class="floating-card card-1">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>Accurate Location</span>
+        </div>
+
+        <div class="floating-card card-2">
+          <i class="fas fa-route"></i>
+          <span>GeoFencing Zone</span>
+        </div>
+
+        <div class="floating-card card-3">
+          <i class="fas fa-satellite"></i>
+          <span>GPS Verified</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="about">
+    <div class="container">
+
+      <div class="section-header">
+        <span class="section-badge">About MarkMe</span>
+        <h2>Revolutionary Geo-Fencing Attendance</h2>
+        <p>Bringing accuracy, automation, and speed to attendance management</p>
+      </div>
+
+      <div class="about-grid">
+
+        <div class="about-card">
+          <div class="about-icon">
+            <i class="fas fa-crosshairs"></i>
+          </div>
+          <h3>Our Vision</h3>
+          <p>
+            To eliminate outdated roll-calls and biometric queues by enabling smart,
+            GPS-verified attendance using only smartphones.
+          </p>
+        </div>
+
+        <div class="about-card">
+          <div class="about-icon">
+            <i class="fas fa-wifi"></i>
+          </div>
+          <h3>Geo-Technology</h3>
+          <p>
+            Powered by advanced GPS + browser location APIs, our system ensures
+            hyper-accurate distance calculations between students and teachers.
+          </p>
+        </div>
+
+        <div class="about-card">
+          <div class="about-icon">
+            <i class="fas fa-lock"></i>
+          </div>
+          <h3>Security First</h3>
+          <p>
+            Location data is securely encrypted and stored temporarily, ensuring
+            privacy and preventing misuse or proxy attendance.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="features">
+    <div class="container">
+
+      <div class="section-header">
+        <span class="section-badge">Features</span>
+        <h2>Smart Features for Modern Institutions</h2>
+        <p>Powered by real-time location and cloud intelligence</p>
+      </div>
+
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fas fa-location-arrow"></i></div>
+          <h3>Geo-Fenced Authentication</h3>
+          <p>Students are marked present only if they are physically inside the classroom zone.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+          <h3>Cloud Sync</h3>
+          <p>Attendance instantly saved to cloud servers for teachers and admins.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+          <h3>Analytics Dashboard</h3>
+          <p>View student performance, attendance trends, and auto-generated reports.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+          <h3>Real-Time Updates</h3>
+          <p>Instant location verification and live attendance tracking.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fas fa-mobile-alt"></i></div>
+          <h3>Mobile Friendly</h3>
+          <p>Students can mark attendance simply using their phone browser.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+          <h3>Anti-Proxy System</h3>
+          <p>Students cannot mark attendance if outside the valid GPS radius.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="contact">
+    <div class="container">
+
+      <div class="section-header">
+        <span class="section-badge">Contact Us</span>
+        <h2>Get In Touch</h2>
+        <p>Have questions? We're here to help</p>
+      </div>
+
+      <div class="contact-grid">
+
+        <div class="contact-card">
+          <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
+          <h3>Location</h3>
+          <p>UMIT College<br>Mumbai, Maharashtra, India</p>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+          <h3>Email</h3>
+          <p>support@markme.co.in<br>info@markme.co.in</p>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-icon"><i class="fas fa-globe"></i></div>
+          <h3>Website</h3>
+          <p>www.markme.co.in<br>Available 24/7</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <i class="fas fa-location-dot"></i>
+          <span>Mark<span>Me</span></span>
+        </div>
+        <p class="footer-text">© 2025 MarkMe. All rights reserved. | Developed with 💙 by SRS</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
+
+
+

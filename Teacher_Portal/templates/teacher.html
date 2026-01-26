@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Location info styling */
+        .location-info {
+            background: #e3f2fd;
+            border-left: 4px solid #42a5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+        .location-info strong {
+            color: #1976d2;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .location-coords {
+            color: #555;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <!-- 🟦 Navbar Section -->
+    <div class="navbar">
+        <div class="navbar-left">
+            <a href="{{ url_for('home_page') }}" class="btn-icon">🏠</a>
+            <span class="welcome-text">Welcome, {{ teacher['name'] }}</span>
+        </div>
+        <div class="navbar-right">
+            <a href="{{ url_for('add_subject_form') }}" class="btn">➕ Add Subject</a>
+            <a href="{{ url_for('add_student_form') }}" class="btn">👩‍🎓 Add Student</a>
+            <a href="{{ url_for('logout') }}" class="btn logout">🚪 Logout</a>
+        </div>
+    </div>
+    
+    <!-- 🟩 Dashboard Main Section -->
+    <div class="dashboard-container">
+        <h1>Welcome, {{ teacher['name'] }}</h1>
+        
+        <!-- ✅ LOCATION DISPLAY - SUPER SAFE VERSION -->
+        {% if teacher_location %}
+            {% if teacher_location.latitude and teacher_location.latitude != 0 %}
+            <div class="location-info">
+                <strong>📍 Your Current Location (For Attendance Tracking)</strong>
+                <div class="location-coords">
+                    Latitude: {{ teacher_location.latitude }} | 
+                    Longitude: {{ teacher_location.longitude }}
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+        
+        <section class="subjects-section">
+            <h2>Your Classes & Subjects</h2>
+            {% if subjects %}
+                <div class="cards-container">
+                    {% for subject in subjects %}
+                        <div class="subject-card">
+                            <h3>{{ subject['subject_name'] }}</h3>
+                            <p><strong>Year:</strong> {{ subject['year'] }}</p>
+                            <p><strong>Branch:</strong> {{ subject['branch'] }}</p>
+                           
+                            <div class="card-actions">
+                                <a href="{{ url_for('class_details', subject_id=subject['id']) }}" class="btn small">👩‍🎓 Add/View Students</a>
+                                <a href="{{ url_for('take_attendance', subject_id=subject['id']) }}" class="btn small">🖐 Take Attendance</a>
+                                <a href="{{ url_for('view_attendance', subject_id=subject['id']) }}" class="btn small">📋 View Attendance</a>
+                                <a href="{{ url_for('generate_report', subject_id=subject['id']) }}" class="btn small">📄 Generate Report</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No subjects added yet. Click <b>"Add Subject"</b> to start teaching a class.</p>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

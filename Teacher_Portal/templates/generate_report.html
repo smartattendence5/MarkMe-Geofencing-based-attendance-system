@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Report - {{ subject['subject_name'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <h1>📊 Teacher Portal</h1>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+
+    <div class="container">
+        <a href="{{ url_for('teacher_dashboard') }}" class="back-btn">← Back</a>
+
+        <!-- Subject Header -->
+        <div class="header-card">
+            <h2>📄 Attendance Report - {{ subject['subject_name'] }}</h2>
+            <p class="subject-info">
+                <strong>Subject Code:</strong> {{ subject['subject_code'] }}<br>
+                <strong>Year:</strong> {{ subject['year'] }} | <strong>Branch:</strong> {{ subject['branch'] }}
+            </p>
+        </div>
+
+        <!-- Students Report Table -->
+        <div class="attendance-table-card">
+            {% if students_summary %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Roll No.</th>
+                        <th>Student Name</th>
+                        <th>Present</th>
+                        <th>Total Classes</th>
+                        <th>Attendance %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students_summary %}
+                    <tr>
+                        <td class="serial-no">{{ student['roll_no'] }}</td>
+                        <td>{{ student['name'] }}</td>
+                        <td style="color: #28a745; font-weight: 600;">{{ student['present_count'] }}</td>
+                        <td>{{ student['total_classes'] }}</td>
+                        <td>
+                            {% if student['total_classes'] > 0 %}
+                                <strong>{{ "%.2f"|format((student['present_count'] / student['total_classes'] * 100)) }}%</strong>
+                            {% else %}
+                                <span style="color: #999;">0%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-records">No attendance data found for this subject.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

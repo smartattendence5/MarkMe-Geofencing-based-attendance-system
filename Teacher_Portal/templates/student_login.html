@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Login | MarkMe</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 15px rgba(66,165,245,0.15);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .icon {
+      background: #e3f2fd;
+      color: #42a5f5;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 2.5em;
+    }
+
+    h1 {
+      text-align: center;
+      color: #1976d2;
+      margin-bottom: 8px;
+      font-size: 1.6em;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 0.95em;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    .form-group { margin-bottom: 20px; }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 0.95em;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e3f2fd;
+      border-radius: 8px;
+      font-size: 1em;
+      background: #fafafa;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #42a5f5;
+      background: white;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      background: #42a5f5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .back-link a {
+      color: #42a5f5;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95em;
+    }
+  </style>
+</head>
+
+<body>
+<div class="login-container">
+  <div class="icon">👨‍🎓</div>
+  <h1>Student Login</h1>
+  <p class="subtitle">Enter your Roll Number and Password</p>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <!-- ✅ UPDATED FORM - Added location capture -->
+  <form id="loginForm" method="POST" action="{{ url_for('student_login') }}" onsubmit="return handleLogin(event)">
+    <div class="form-group">
+      <label for="roll_no">Roll Number</label>
+      <input type="text" id="roll_no" name="roll_no" required placeholder="Enter your Roll Number">
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required placeholder="Enter your password">
+    </div>
+
+    <!-- ✅ ADDED - Hidden location fields -->
+    <input type="hidden" name="latitude" id="latitude">
+    <input type="hidden" name="longitude" id="longitude">
+
+    <button type="submit" class="btn" id="loginBtn">Login</button>
+  </form>
+
+  <div class="back-link">
+    <a href="{{ url_for('home_page') }}">← Back to Home</a>
+  </div>
+</div>
+
+<!-- ✅ ADDED - Location fetch JavaScript -->
+<script>
+  function handleLogin(event) {
+    event.preventDefault();
+    const btn = document.getElementById("loginBtn");
+    btn.disabled = true;
+    btn.textContent = "Fetching location...";
+
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported by your browser.");
+      btn.disabled = false;
+      btn.textContent = "Login";
+      return false;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        document.getElementById("latitude").value = position.coords.latitude;
+        document.getElementById("longitude").value = position.coords.longitude;
+
+        btn.textContent = "Logging in...";
+        event.target.submit(); // submit the form
+      },
+      function() {
+        alert("Please allow location access to login.");
+        btn.disabled = false;
+        btn.textContent = "Login";
+      }
+    );
+
+    return false;
+  }
+</script>
+</body>
+</html>
+
+
+
+
