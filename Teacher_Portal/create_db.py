@@ -1,21 +1,22 @@
 import sqlite3
 import os
 from datetime import datetime, timedelta
-import random
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "attendance.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "attendance.db")
 
-# Delete old database if exists
+# ================= DELETE OLD DB =================
 if os.path.exists(DB_PATH):
     os.remove(DB_PATH)
     print("🗑️ Old database deleted")
 
 conn = sqlite3.connect(DB_PATH)
+conn.execute("PRAGMA foreign_keys = ON")
 c = conn.cursor()
 
 print("📦 Creating tables...")
 
-# ================= TEACHERS =================
+# ================= TABLES =================
 c.execute('''CREATE TABLE teachers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -25,7 +26,6 @@ c.execute('''CREATE TABLE teachers (
     phone TEXT
 )''')
 
-# ================= STUDENTS =================
 c.execute('''CREATE TABLE students (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -37,7 +37,6 @@ c.execute('''CREATE TABLE students (
     phone TEXT
 )''')
 
-# ================= SUBJECTS =================
 c.execute('''CREATE TABLE subjects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     subject_name TEXT NOT NULL,
@@ -45,21 +44,19 @@ c.execute('''CREATE TABLE subjects (
     teacher_id INTEGER NOT NULL,
     year TEXT,
     branch TEXT,
-    FOREIGN KEY(teacher_id) REFERENCES teachers(id)
+    FOREIGN KEY(teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
 )''')
 
-# ================= ENROLLMENTS =================
 c.execute('''CREATE TABLE enrollments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id INTEGER NOT NULL,
     subject_id INTEGER NOT NULL,
     enrollment_date TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(student_id) REFERENCES students(id),
-    FOREIGN KEY(subject_id) REFERENCES subjects(id),
+    FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
     UNIQUE(student_id, subject_id)
 )''')
 
-# ================= ATTENDANCE =================
 c.execute('''CREATE TABLE attendance (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id INTEGER NOT NULL,
@@ -68,129 +65,107 @@ c.execute('''CREATE TABLE attendance (
     status TEXT NOT NULL CHECK(status IN ('Present', 'Absent')),
     marked_by INTEGER,
     marked_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(student_id) REFERENCES students(id),
-    FOREIGN KEY(subject_id) REFERENCES subjects(id),
-    FOREIGN KEY(marked_by) REFERENCES teachers(id)
+    FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY(marked_by) REFERENCES teachers(id),
+    UNIQUE(student_id, subject_id, date)
 )''')
 
-# ------------------- Temporary student location -------------------
-c.execute('''
-CREATE TABLE IF NOT EXISTS student_temp_locations (
+c.execute('''CREATE TABLE student_temp_locations (
     student_id INTEGER PRIMARY KEY,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(student_id) REFERENCES students(id)
-)
-''')
+    FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+)''')
 
-# ------------------- Student Mark Requests (per subject) -------------------
-c.execute('''
-CREATE TABLE IF NOT EXISTS student_mark_requests (
-    student_id INTEGER,
-    subject_id INTEGER,
-    latitude REAL NOT NULL,
-    longitude REAL NOT NULL,
-    marked_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY(student_id, subject_id),
-    FOREIGN KEY(student_id) REFERENCES students(id),
-    FOREIGN KEY(subject_id) REFERENCES subjects(id)
-)
-''')
-c.execute('''
-CREATE TABLE IF NOT EXISTS teacher_temp_locations (
+c.execute('''CREATE TABLE teacher_temp_locations (
     teacher_id INTEGER PRIMARY KEY,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(teacher_id) REFERENCES teachers(id)
-)
-''')
+    FOREIGN KEY(teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
+)''')
+
+c.execute('''CREATE TABLE active_attendance_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id INTEGER NOT NULL,
+    teacher_id INTEGER NOT NULL,
+    teacher_latitude REAL NOT NULL,
+    teacher_longitude REAL NOT NULL,
+    date TEXT NOT NULL,
+    start_time TEXT DEFAULT CURRENT_TIMESTAMP,
+    end_time TEXT NOT NULL,
+    FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY(teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
+)''')
 
 print("✅ All tables created\n")
 
-# ================= INSERT SAMPLE DATA =================
-print("📝 Inserting sample data...\n")
+# ================= DATA =================
 
-# ---------- Teachers ----------
+# Teachers
 teachers = [
     ('Dr. Shitole Sir', 'shitole@college.com', '12345', 'Computer Science', '9876543210'),
     ('Prof. Margi Maam', 'margi@college.com', 'teacher123', 'Computer Science', '9876543211'),
-    ('Dr. Patil Sir', 'patil@college.com', 'teacher123', 'Information Technology', '9876543212'),
-    ('Prof. Deshmukh Maam', 'deshmukh@college.com', 'teacher123', 'Electronics', '9876543213'),
-    ('Dr. Kulkarni Sir', 'kulkarni@college.com', 'teacher123', 'Computer Science', '9876543214')
 ]
-c.executemany(
-    "INSERT INTO teachers (name,email,password,department,phone) VALUES (?,?,?,?,?)",
-    teachers
-)
+c.executemany("INSERT INTO teachers (name,email,password,department,phone) VALUES (?,?,?,?,?)", teachers)
 
-# ---------- Students ----------
+# ✅ 10 STUDENTS ADDED
 students = [
     ('Rahul Sharma','CSE2021001','Second Year','Computer Science','student123','rahul@student.edu','9123456780'),
     ('Priya Patel','CSE2021002','Second Year','Computer Science','student123','priya@student.edu','9123456781'),
-    ('Arjun Kumar','CSE2021003','Second Year','Computer Science','student123','arjun@student.edu','9123456782'),
-    ('Sneha Reddy','CSE2021004','Second Year','Computer Science','student123','sneha@student.edu','9123456783'),
-    ('Vikram Singh','CSE2021005','Second Year','Computer Science','student123','vikram@student.edu','9123456784'),
-    ('Neha Gupta','CSE2021006','Second Year','Computer Science','student123','neha@student.edu','9123456785'),
-    ('Rohan Joshi','CSE2021007','Second Year','Computer Science','student123','rohan@student.edu','9123456786'),
-    ('Ananya Das','CSE2021008','Second Year','Computer Science','student123','ananya@student.edu','9123456787'),
-    ('Karan Mehta','CSE2021009','Second Year','Computer Science','student123','karan@student.edu','9123456788'),
-    ('Ishita Rao','CSE2021010','Second Year','Computer Science','student123','ishita@student.edu','9123456789'),
+    ('Amit Verma','CSE2021003','Second Year','Computer Science','student123','amit@student.edu','9123456782'),
+    ('Sneha Iyer','CSE2021004','Second Year','Computer Science','student123','sneha@student.edu','9123456783'),
+    ('Rohit Kumar','CSE2021005','Second Year','Computer Science','student123','rohit@student.edu','9123456784'),
+    ('Neha Singh','CSE2021006','Second Year','Computer Science','student123','neha@student.edu','9123456785'),
+    ('Karan Mehta','CSE2021007','Second Year','Computer Science','student123','karan@student.edu','9123456786'),
+    ('Pooja Shah','CSE2021008','Second Year','Computer Science','student123','pooja@student.edu','9123456787'),
+    ('Vikas Gupta','CSE2021009','Second Year','Computer Science','student123','vikas@student.edu','9123456788'),
+    ('Anjali Desai','CSE2021010','Second Year','Computer Science','student123','anjali@student.edu','9123456789'),
 ]
-c.executemany(
-    "INSERT INTO students (name,roll_no,year,branch,password,email,phone) VALUES (?,?,?,?,?,?,?)",
-    students
-)
+c.executemany("INSERT INTO students (name,roll_no,year,branch,password,email,phone) VALUES (?,?,?,?,?,?,?)", students)
 
-# ---------- Subjects ----------
+# Subjects
 subjects = [
     ('Data Structures','CS201',1,'Second Year','Computer Science'),
     ('Web Development','CS202',2,'Second Year','Computer Science'),
-    ('Python Programming','CS203',5,'Second Year','Computer Science'),
-    ('Digital Logic','CS204',1,'Second Year','Computer Science'),
-    ('Computer Architecture','CS205',3,'Second Year','Computer Science'),
-    ('Discrete Mathematics','CS206',3,'Second Year','Computer Science'),
-    ('Operating Systems','CS207',2,'Second Year','Computer Science'),
-    ('Software Engineering','CS208',4,'Second Year','Computer Science'),
-    ('Database Management','CS209',5,'Second Year','Computer Science'),
-    ('Computer Networks','CS210',1,'Second Year','Computer Science')
+    ('Database Management','CS203',1,'Second Year','Computer Science'),
+    ('Operating Systems','CS204',2,'Second Year','Computer Science'),
 ]
-c.executemany(
-    "INSERT INTO subjects (subject_name,subject_code,teacher_id,year,branch) VALUES (?,?,?,?,?)",
-    subjects
-)
+c.executemany("INSERT INTO subjects (subject_name,subject_code,teacher_id,year,branch) VALUES (?,?,?,?,?)", subjects)
 
-# ---------- Enrollments ----------
+# ✅ ENROLL ALL 10 STUDENTS IN ALL SUBJECTS
 enrollments = []
-for subject_id in range(1, 11):  # 10 subjects
+for subject_id in range(1, 5):
     for student_id in range(1, 11):  # 10 students
         enrollments.append((student_id, subject_id))
 
-c.executemany(
-    "INSERT INTO enrollments (student_id,subject_id) VALUES (?,?)",
-    enrollments
-)
+c.executemany("INSERT INTO enrollments (student_id,subject_id) VALUES (?,?)", enrollments)
 
-# ---------- Attendance ----------
-attendance_records = []
-for subject_id in range(1, 11):  # 10 subjects
-    for student_id in range(1, 11):  # 10 students
-        total_classes = 15
-        classes_attended = random.randint(10, 15)  # Random attendance
-        for i in range(total_classes):
-            status = 'Present' if i < classes_attended else 'Absent'
-            date = (datetime.now() - timedelta(days=total_classes-i)).strftime("%Y-%m-%d")
-            marked_by = random.randint(1, 5)  # Random teacher
-            attendance_records.append((student_id, subject_id, date, status, marked_by))
+# ================= SAMPLE ATTENDANCE =================
+print("📊 Adding sample attendance...")
 
-c.executemany(
-    "INSERT INTO attendance (student_id, subject_id, date, status, marked_by) VALUES (?,?,?,?,?)",
-    attendance_records
-)
+today = datetime.now()
+dates = [
+    (today - timedelta(days=2)).strftime('%Y-%m-%d'),
+    (today - timedelta(days=1)).strftime('%Y-%m-%d'),
+]
+
+attendance_data = []
+
+# Auto generate attendance for all
+for student_id in range(1, 11):
+    for subject_id in range(1, 5):
+        attendance_data.append((student_id, subject_id, dates[0], 'Present' if student_id % 2 == 0 else 'Absent', 1))
+        attendance_data.append((student_id, subject_id, dates[1], 'Present', 1))
+
+c.executemany("""
+INSERT INTO attendance (student_id,subject_id,date,status,marked_by)
+VALUES (?,?,?,?,?)
+""", attendance_data)
 
 conn.commit()
 conn.close()
 
-print("🎉 DATABASE READY WITH MORE SUBJECTS & ATTENDANCE!")
-print("🚀 Run: python app.py to see the dashboard")
+print("\n🎉 DATABASE READY WITH 10 STUDENTS & FULL DATA!")

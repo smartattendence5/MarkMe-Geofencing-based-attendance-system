@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Dashboard</title>
+    <title>Teacher Dashboard | MarkMe</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* Location info styling */
         .location-info {
             background: #e3f2fd;
             border-left: 4px solid #42a5f5;
@@ -24,10 +23,33 @@
             color: #555;
             font-family: 'Courier New', monospace;
         }
+
+        /* Chatbot styles */
+        .qbtn {
+            font-size: 12px;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            line-height: 1.3;
+        }
+        .qbtn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            #chat-window { width: 300px !important; }
+        }
     </style>
 </head>
 <body>
-    <!-- 🟦 Navbar Section -->
+    <!-- Navbar -->
     <div class="navbar">
         <div class="navbar-left">
             <a href="{{ url_for('home_page') }}" class="btn-icon">🏠</a>
@@ -39,24 +61,23 @@
             <a href="{{ url_for('logout') }}" class="btn logout">🚪 Logout</a>
         </div>
     </div>
-    
-    <!-- 🟩 Dashboard Main Section -->
+
+    <!-- Dashboard Main -->
     <div class="dashboard-container">
         <h1>Welcome, {{ teacher['name'] }}</h1>
-        
-        <!-- ✅ LOCATION DISPLAY - SUPER SAFE VERSION -->
+
         {% if teacher_location %}
             {% if teacher_location.latitude and teacher_location.latitude != 0 %}
             <div class="location-info">
                 <strong>📍 Your Current Location (For Attendance Tracking)</strong>
                 <div class="location-coords">
-                    Latitude: {{ teacher_location.latitude }} | 
+                    Latitude: {{ teacher_location.latitude }} |
                     Longitude: {{ teacher_location.longitude }}
                 </div>
             </div>
             {% endif %}
         {% endif %}
-        
+
         <section class="subjects-section">
             <h2>Your Classes & Subjects</h2>
             {% if subjects %}
@@ -66,7 +87,6 @@
                             <h3>{{ subject['subject_name'] }}</h3>
                             <p><strong>Year:</strong> {{ subject['year'] }}</p>
                             <p><strong>Branch:</strong> {{ subject['branch'] }}</p>
-                           
                             <div class="card-actions">
                                 <a href="{{ url_for('class_details', subject_id=subject['id']) }}" class="btn small">👩‍🎓 Add/View Students</a>
                                 <a href="{{ url_for('take_attendance', subject_id=subject['id']) }}" class="btn small">🖐 Take Attendance</a>
@@ -81,5 +101,137 @@
             {% endif %}
         </section>
     </div>
+
+    <!-- ===================== CHATBOT WIDGET ===================== -->
+    <div id="chatbot-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+        <button id="chat-icon" onclick="toggleChat()" style="
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: white; transition: transform 0.3s;">
+            💬
+        </button>
+
+        <div id="chat-window" style="
+            position: absolute; bottom: 80px; right: 0;
+            width: 360px; height: 520px;
+            background: white; border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none; flex-direction: column;
+            overflow: hidden;">
+
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white; padding: 15px; font-weight: bold;
+                display: flex; justify-content: space-between; align-items: center;">
+                <span>🤖 Teacher Assistant</span>
+                <button onclick="toggleChat()" style="background:none;border:none;color:white;font-size:24px;cursor:pointer;">×</button>
+            </div>
+
+            <!-- Messages area -->
+            <div id="chat-messages" style="flex:1; overflow-y:auto; padding:12px; background:#f5f5f5;">
+                <p style="text-align:center; color:#888; font-size:13px; margin-bottom:12px;">
+                    👨‍🏫 Hi! Select a quick question or type your own below.
+                </p>
+
+                <!-- Quick buttons -->
+                <div id="quick-btns" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;">
+                    <button class="qbtn" onclick="sendQuick('Show overall attendance statistics')">📊 Overall Stats</button>
+                    <button class="qbtn" onclick="sendQuick('What is today attendance?')">📅 Today Attendance</button>
+                    <button class="qbtn" onclick="sendQuick('Show students with attendance below 75 percent')">⚠️ Low Attendance</button>
+                    <button class="qbtn" onclick="sendQuick('Show subject wise attendance summary')">📚 Subject Report</button>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div style="padding:12px; border-top:1px solid #ddd; display:flex; gap:8px;">
+                <input type="text" id="chat-input" placeholder="Type your question here..."
+                    style="flex:1; padding:10px; border:1px solid #ddd; border-radius:20px; outline:none; font-size:14px;"
+                    onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()" style="background:#667eea; color:white; border:none;
+                    padding:10px 18px; border-radius:20px; cursor:pointer; font-weight:bold; font-size:14px;">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot JS -->
+    <script>
+        function toggleChat() {
+            const win = document.getElementById('chat-window');
+            const icon = document.getElementById('chat-icon');
+            if (win.style.display === 'none' || win.style.display === '') {
+                win.style.display = 'flex';
+                icon.style.transform = 'scale(0)';
+            } else {
+                win.style.display = 'none';
+                icon.style.transform = 'scale(1)';
+            }
+        }
+
+        function addUserMsg(question) {
+            const messages = document.getElementById('chat-messages');
+            messages.innerHTML += `
+                <div style="text-align:right; margin-bottom:10px;">
+                    <div style="display:inline-block; background:#667eea; color:white;
+                        padding:10px 15px; border-radius:15px 15px 3px 15px; max-width:75%; font-size:14px;">
+                        ${question}
+                    </div>
+                </div>`;
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function addBotMsg(html) {
+            const messages = document.getElementById('chat-messages');
+            messages.innerHTML += `
+                <div style="background:white; padding:12px 15px; border-radius:10px;
+                    margin-bottom:10px; font-size:14px; line-height:1.6;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                    <span style="font-size:12px; color:#888; display:block; margin-bottom:6px;">🤖 Assistant</span>
+                    ${html}
+                </div>`;
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendQuick(question) {
+            addUserMsg(question);
+            callBot(question);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const question = input.value.trim();
+            if (!question) return;
+            input.value = '';
+            addUserMsg(question);
+            callBot(question);
+        }
+
+        function callBot(question) {
+            const messages = document.getElementById('chat-messages');
+            const typingId = 'typing_' + Date.now();
+            messages.innerHTML += `<div id="${typingId}" style="color:#999; font-style:italic; font-size:13px; margin-bottom:8px;">🤖 Thinking...</div>`;
+            messages.scrollTop = messages.scrollHeight;
+
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: question })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const el = document.getElementById(typingId);
+                if (el) el.remove();
+                addBotMsg(data.response || 'No response received.');
+            })
+            .catch(() => {
+                const el = document.getElementById(typingId);
+                if (el) el.remove();
+                addBotMsg('<span style="color:#c62828;">❌ Could not connect to server. Please try again.</span>');
+            });
+        }
+    </script>
 </body>
 </html>

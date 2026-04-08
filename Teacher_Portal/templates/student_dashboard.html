@@ -4,9 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Student Dashboard | MarkMe</title>
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -15,8 +13,6 @@
       min-height: 100vh;
       color: #333;
     }
-
-    /* Navbar */
     .navbar {
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(10px);
@@ -30,7 +26,6 @@
       z-index: 100;
       border-radius: 0 0 15px 15px;
     }
-
     .navbar h1 { color: #667eea; font-size: 1.8em; }
     .logout-btn {
       background: #dc3545;
@@ -44,13 +39,9 @@
     .logout-btn:hover {
       background: #c82333;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      box-shadow: 0 4px 12px rgba(220,53,69,0.3);
     }
-
-    /* Container */
     .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
-
-    /* Flash messages */
     .messages-container { margin-bottom: 20px; }
     .alert {
       padding: 15px 20px;
@@ -65,7 +56,6 @@
     .alert-error, .alert-danger { background:#f8d7da; color:#721c24; border-left:4px solid #dc3545; }
     .alert-info { background:#d1ecf1; color:#0c5460; border-left:4px solid #17a2b8; }
 
-    /* Welcome card */
     .welcome-card {
       background: white;
       padding: 30px;
@@ -82,7 +72,6 @@
     .student-info p { background:#f8f9fa; padding:12px 15px; border-radius:8px; }
     .student-info strong { color: #667eea; }
 
-    /* ✅ ADDED - Location info styling */
     .location-info {
       background: linear-gradient(135deg, #e3f2fd 0%, #f0f4ff 100%);
       border-left: 4px solid #667eea;
@@ -91,19 +80,9 @@
       margin-top: 20px;
       font-size: 0.95em;
     }
-    .location-info strong {
-      color: #667eea;
-      display: block;
-      margin-bottom: 8px;
-      font-size: 1.05em;
-    }
-    .location-coords {
-      color: #555;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9em;
-    }
+    .location-info strong { color: #667eea; display: block; margin-bottom: 8px; font-size: 1.05em; }
+    .location-coords { color: #555; font-family: 'Courier New', monospace; font-size: 0.9em; }
 
-    /* Subject cards */
     .subject-card {
       background: white;
       padding: 30px;
@@ -112,10 +91,7 @@
       margin-bottom: 25px;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .subject-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    }
+    .subject-card:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
     .subject-card h2 { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
     .subject-card small { color: #666; font-size: 0.75em; }
 
@@ -144,7 +120,6 @@
     .stat-card h3 { font-size:2.5em; color:#333; margin-bottom:10px; }
     .stat-card h3.present { color:#28a745; }
     .stat-card h3.absent { color:#dc3545; }
-
     .stat-card p { color:#666; font-size:0.9em; font-weight:500; }
     .stat-card.highlight p { color:rgba(255,255,255,0.9); }
 
@@ -157,7 +132,6 @@
       color:#856404;
       font-weight:500;
     }
-
     .no-data-card {
       background:white;
       padding:60px 30px;
@@ -196,6 +170,21 @@
     }
     .view-all-btn:hover { transform: translateX(5px); box-shadow:0 4px 12px rgba(102,126,234,0.3); }
 
+    /* Chatbot styles */
+    .qbtn {
+      font-size: 12px;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: white;
+      color: #333;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+      line-height: 1.3;
+    }
+    .qbtn:hover { background: #667eea; color: white; border-color: #667eea; }
+
     @media (max-width:768px) {
       .navbar { padding: 15px 20px; }
       .navbar h1 { font-size: 1.3em; }
@@ -203,6 +192,7 @@
       .welcome-card, .subject-card, .attendance-card { padding: 20px; }
       .stats-grid { grid-template-columns: repeat(2,1fr); }
       .student-info { grid-template-columns:1fr; }
+      #chat-window { width: 300px !important; }
     }
   </style>
 </head>
@@ -215,7 +205,6 @@
 
   <div class="container">
 
-    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="messages-container">
@@ -226,7 +215,6 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Welcome Card -->
     <div class="welcome-card">
       <h2>Welcome, {{ student['name'] }}! 👋</h2>
       <div class="student-info">
@@ -235,8 +223,6 @@
         <p><strong>Branch:</strong> {{ student['branch'] or 'N/A' }}</p>
         <p><strong>Email:</strong> {{ student['email'] or 'N/A' }}</p>
       </div>
-
-      <!-- ✅ ADDED - Student Location Display -->
       {% if student_location is defined and student_location %}
       <div class="location-info">
         <strong>📍 Your Location (Saved for Attendance)</strong>
@@ -245,103 +231,245 @@
           Longitude: {{ student_location.longitude }}
         </div>
         <p style="margin-top: 8px; font-size: 0.85em; color: #666;">
-          ℹ️ Your location is used to verify attendance when teacher marks it
+          ℹ️ Your location is used to verify attendance when teacher marks it.
         </p>
       </div>
       {% endif %}
     </div>
 
-  <!-- Subjects / Attendance Summary -->
-{% if attendance_summary %}
-  {% for summary in attendance_summary %}
-    <div class="subject-card">
-      <h2>{{ summary.subject_name }} <small>({{ summary.teacher_name }})</small></h2>
-
-      <div class="stats-grid">
-        <div class="stat-card highlight">
-          <div class="percentage {% if summary.attendance_percentage >= 75 %}good{% elif summary.attendance_percentage >= 60 %}warning{% else %}danger{% endif %}">
-            {{ summary.attendance_percentage }}%
+    {% if attendance_summary %}
+      {% for summary in attendance_summary %}
+        <div class="subject-card">
+          <h2>{{ summary.subject_name }} <small>({{ summary.teacher_name }})</small></h2>
+          <div class="stats-grid">
+            <div class="stat-card highlight">
+              <div class="percentage
+                {% if summary.attendance_percentage >= 75 %}good
+                {% elif summary.attendance_percentage >= 60 %}warning
+                {% else %}danger
+                {% endif %}">
+                {{ summary.attendance_percentage }}%
+              </div>
+              <p>Attendance Rate</p>
+            </div>
+            <div class="stat-card">
+              <h3>{{ summary.total_classes }}</h3>
+              <p>Total Classes</p>
+            </div>
+            <div class="stat-card">
+              <h3 class="present">{{ summary.present_count }}</h3>
+              <p>Classes Attended</p>
+            </div>
+            <div class="stat-card">
+              <h3 class="absent">{{ summary.total_classes - summary.present_count }}</h3>
+              <p>Classes Missed</p>
+            </div>
           </div>
-          <p>Attendance Rate</p>
+
+          {% if summary.attendance_percentage < 75 %}
+            <div class="warning-banner">
+              ⚠️ Your attendance is below 75%. Please attend regularly to maintain minimum attendance!
+            </div>
+          {% endif %}
+
+          <form class="mark-attendance-form" data-subject-id="{{ summary.subject_id }}">
+            <button type="submit" style="
+                background:#28a745;
+                color:white;
+                padding:10px 20px;
+                border:none;
+                border-radius:8px;
+                font-size:1rem;
+                font-weight:600;
+                cursor:pointer;
+                margin-top:15px;
+                width:100%;">
+              📍 Mark Attendance
+            </button>
+          </form>
         </div>
-        <div class="stat-card">
-          <h3>{{ summary.total_classes }}</h3>
-          <p>Total Classes</p>
-        </div>
-        <div class="stat-card">
-          <h3 class="present">{{ summary.present_count }}</h3>
-          <p>Classes Attended</p>
-        </div>
-        <div class="stat-card">
-          <h3 class="absent">{{ summary.total_classes - summary.present_count }}</h3>
-          <p>Classes Missed</p>
+      {% endfor %}
+    {% else %}
+      <div class="no-data-card">
+        <h3>📚 No Subjects Enrolled</h3>
+        <p>You are not enrolled in any subjects yet. Please contact your teacher to get enrolled.</p>
+      </div>
+    {% endif %}
+
+    <div class="attendance-card">
+      <h2>
+        Recent Attendance
+        <a href="{{ url_for('student_attendance') }}" class="view-all-btn">View All →</a>
+      </h2>
+    </div>
+
+  </div><!-- end container -->
+
+  <!-- ===================== CHATBOT WIDGET ===================== -->
+  <div id="chatbot-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <button id="chat-icon" onclick="toggleChat()" style="
+        width: 60px; height: 60px; border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        font-size: 28px; color: white; transition: transform 0.3s;">
+      💬
+    </button>
+
+    <div id="chat-window" style="
+        position: absolute; bottom: 80px; right: 0;
+        width: 360px; height: 520px;
+        background: white; border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        display: none; flex-direction: column;
+        overflow: hidden;">
+
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white; padding: 15px; font-weight: bold;
+          display: flex; justify-content: space-between; align-items: center;">
+        <span>🤖 Student Assistant</span>
+        <button onclick="toggleChat()" style="background:none;border:none;color:white;font-size:24px;cursor:pointer;">×</button>
+      </div>
+
+      <!-- Messages area -->
+      <div id="chat-messages" style="flex:1; overflow-y:auto; padding:12px; background:#f5f5f5;">
+        <p style="text-align:center; color:#888; font-size:13px; margin-bottom:12px;">
+          🎓 Hi! Select a quick question or type your own below.
+        </p>
+
+        <!-- Quick buttons -->
+        <div id="quick-btns" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;">
+          <button class="qbtn" onclick="sendQuick('What is my attendance percentage?')">📊 Attendance %</button>
+          <button class="qbtn" onclick="sendQuick('What is my status today?')">📅 Today Status</button>
+          <button class="qbtn" onclick="sendQuick('How many classes are needed for 75 percent attendance?')">🎯 75% Requirement</button>
+          <button class="qbtn" onclick="sendQuick('How many total classes do I have?')">📚 Total Classes</button>
+          <button class="qbtn" onclick="sendQuick('Which subject has the lowest attendance?')">📉 Lowest Subject</button>
         </div>
       </div>
 
-      {% if summary.attendance_percentage < 75 %}
-        <div class="warning-banner">
-          ⚠️ Your attendance is below 75%. Please attend regularly to maintain minimum attendance!
-        </div>
-      {% endif %}
-
-      <!-- ✅ Mark Attendance Button -->
-      <form class="mark-attendance-form" data-subject-id="{{ summary.subject_id }}">
-        <button type="submit" class="view-all-btn" style="background:#28a745; margin-top:15px;">
-          Mark Attendance
+      <!-- Input area -->
+      <div style="padding:12px; border-top:1px solid #ddd; display:flex; gap:8px;">
+        <input type="text" id="chat-input" placeholder="Type your question here..."
+          style="flex:1; padding:10px; border:1px solid #ddd; border-radius:20px; outline:none; font-size:14px;"
+          onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()" style="background:#667eea; color:white; border:none;
+            padding:10px 18px; border-radius:20px; cursor:pointer; font-weight:bold; font-size:14px;">
+          Send
         </button>
-      </form>
+      </div>
     </div>
-  {% endfor %}
-{% else %}
-  <div class="no-data-card">
-    <h3>📚 No Subjects Enrolled</h3>
-    <p>You are not enrolled in any subjects yet. Please contact your teacher to get enrolled.</p>
   </div>
-{% endif %}
 
-<div class="attendance-card">
-  <h2>
-    Recent Attendance
-    <a href="{{ url_for('student_attendance') }}" class="view-all-btn">View All →</a>
-  </h2>
-</div>
-
-<!-- ✅ JS for Mark Attendance -->
-<script>
-document.querySelectorAll('.mark-attendance-form').forEach(form => {
-    form.addEventListener('submit', async e => {
+  <!-- Mark Attendance JS -->
+  <script>
+    document.querySelectorAll('.mark-attendance-form').forEach(form => {
+      form.addEventListener('submit', async e => {
         e.preventDefault();
         const subjectId = form.dataset.subjectId;
-
         if (!navigator.geolocation) {
-            alert("Geolocation is not supported by your browser.");
-            return;
+          alert("Geolocation is not supported by your browser.");
+          return;
         }
-
         navigator.geolocation.getCurrentPosition(async position => {
-            const res = await fetch("{{ url_for('mark_attendance') }}", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    subject_id: subjectId,
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                })
-            });
-
-            const data = await res.json();
-            if (res.ok) {
-                alert(`Attendance marked as: ${data.status}`);
-                window.location.reload(); // refresh to update dashboard
-            } else {
-                alert(data.error || "Failed to mark attendance");
-            }
+          const res = await fetch("{{ url_for('mark_attendance') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              subject_id: subjectId,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            alert(`Attendance marked as: ${data.status}\nDistance: ${data.distance}m`);
+            window.location.reload();
+          } else {
+            alert(data.error || "Failed to mark attendance.");
+          }
         }, err => {
-            alert("Unable to get your location: " + err.message);
+          alert("Unable to get your location: " + err.message);
         });
+      });
     });
-});
-</script>
+  </script>
 
+  <!-- Chatbot JS -->
+  <script>
+    function toggleChat() {
+      const win = document.getElementById('chat-window');
+      const icon = document.getElementById('chat-icon');
+      if (win.style.display === 'none' || win.style.display === '') {
+        win.style.display = 'flex';
+        icon.style.transform = 'scale(0)';
+      } else {
+        win.style.display = 'none';
+        icon.style.transform = 'scale(1)';
+      }
+    }
+
+    function addUserMsg(question) {
+      const messages = document.getElementById('chat-messages');
+      messages.innerHTML += `
+        <div style="text-align:right; margin-bottom:10px;">
+          <div style="display:inline-block; background:#667eea; color:white;
+              padding:10px 15px; border-radius:15px 15px 3px 15px; max-width:75%; font-size:14px;">
+            ${question}
+          </div>
+        </div>`;
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addBotMsg(html) {
+      const messages = document.getElementById('chat-messages');
+      messages.innerHTML += `
+        <div style="background:white; padding:12px 15px; border-radius:10px;
+            margin-bottom:10px; font-size:14px; line-height:1.6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+          <span style="font-size:12px; color:#888; display:block; margin-bottom:6px;">🤖 Assistant</span>
+          ${html}
+        </div>`;
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function sendQuick(question) {
+      addUserMsg(question);
+      callBot(question);
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const question = input.value.trim();
+      if (!question) return;
+      input.value = '';
+      addUserMsg(question);
+      callBot(question);
+    }
+
+    function callBot(question) {
+      const messages = document.getElementById('chat-messages');
+      const typingId = 'typing_' + Date.now();
+      messages.innerHTML += `<div id="${typingId}" style="color:#999; font-style:italic; font-size:13px; margin-bottom:8px;">🤖 Thinking...</div>`;
+      messages.scrollTop = messages.scrollHeight;
+
+      fetch('/chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: question })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const el = document.getElementById(typingId);
+        if (el) el.remove();
+        addBotMsg(data.response || 'No response received.');
+      })
+      .catch(() => {
+        const el = document.getElementById(typingId);
+        if (el) el.remove();
+        addBotMsg('<span style="color:#c62828;">❌ Could not connect to server. Please try again.</span>');
+      });
+    }
+  </script>
 </body>
 </html>
