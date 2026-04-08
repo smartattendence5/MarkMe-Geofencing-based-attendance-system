@@ -73,51 +73,57 @@ CREATE TABLE active_attendance_sessions (
 ''')
 print("✅ Tables created")
 
-# ══ TEACHERS ══
+# ══════════════════════════════════════════════════════════════
+# ══ TEACHERS (4 teachers, each handles ONE branch)
+# ══════════════════════════════════════════════════════════════
 c.executemany(
     "INSERT INTO teachers (name,email,password,department,phone) VALUES (?,?,?,?,?)",
     [
-        ('Dr. Shitole Sir',  'shitole@college.com','teacher123','Computer Science',      '9876543210'),
-        ('Prof. Margi Maam', 'margi@college.com',  'teacher123','Computer Science',      '9876543211'),
-        ('Dr. Patil Sir',    'patil@college.com',  'teacher123','Electronics',           '9876543212'),
-        ('Prof. Nehal Maam', 'nehal@college.com',  'teacher123','Information Technology','9876543213'),
+        ('Dr. Shitole Sir',  'shitole@college.com', 'teacher123', 'Computer Science',      '9876543210'),
+        ('Prof. Margi Maam', 'margi@college.com',   'teacher123', 'Electronics',           '9876543211'),
+        ('Dr. Patil Sir',    'patil@college.com',   'teacher123', 'Data Science',          '9876543212'),
+        ('Prof. Nehal Maam', 'nehal@college.com',   'teacher123', 'Information Technology','9876543213'),
     ]
 )
 print("✅ Teachers inserted (4)")
 
-# ══ SUBJECTS — 4 per teacher = 2 subjects Branch-A + 2 subjects Branch-B ══
+# ══════════════════════════════════════════════════════════════
+# ══ SUBJECTS — Each teacher = 4 subjects in SAME branch
+# ══════════════════════════════════════════════════════════════
 c.executemany(
     "INSERT INTO subjects (subject_name,subject_code,teacher_id,year,branch) VALUES (?,?,?,?,?)",
     [
-        # Shitole (1) → 2 CSE 3rd yr + 2 DS 3rd yr
-        ('Machine Learning',    'CSE301', 1, 'Third Year', 'Computer Science'),
-        ('Digital Electronics', 'CSE302', 1, 'Third Year', 'Computer Science'),
-        ('Data Mining',         'DS301',  1, 'Third Year', 'Data Science'),
-        ('Statistical Analysis','DS302',  1, 'Third Year', 'Data Science'),
+        # Teacher 1 (Shitole) → 4 CSE subjects
+        ('Machine Learning',        'CSE301', 1, 'Third Year', 'Computer Science'),
+        ('Data Structures',         'CSE302', 1, 'Third Year', 'Computer Science'),
+        ('Database Management',     'CSE303', 1, 'Third Year', 'Computer Science'),
+        ('Software Engineering',    'CSE304', 1, 'Third Year', 'Computer Science'),
 
-        # Margi (2) → 2 CSE 3rd yr + 2 ENC 3rd yr
-        ('Data Structures & Algorithms','CSE303', 2, 'Third Year', 'Computer Science'),
-        ('Object Oriented Programming', 'CSE304', 2, 'Third Year', 'Computer Science'),
-        ('Signals & Systems',           'ENC301', 2, 'Third Year', 'Electronics'),
-        ('Microcontrollers',            'ENC302', 2, 'Third Year', 'Electronics'),
+        # Teacher 2 (Margi) → 4 ENC subjects
+        ('Digital Electronics',     'ENC301', 2, 'Third Year', 'Electronics'),
+        ('Signals & Systems',       'ENC302', 2, 'Third Year', 'Electronics'),
+        ('Microcontrollers',        'ENC303', 2, 'Third Year', 'Electronics'),
+        ('Communication Systems',   'ENC304', 2, 'Third Year', 'Electronics'),
 
-        # Patil (3) → 2 ENC 3rd yr + 2 DS 3rd yr
-        ('Analog Electronics',   'ENC303', 3, 'Third Year', 'Electronics'),
-        ('Communication Systems','ENC304', 3, 'Third Year', 'Electronics'),
-        ('AI for Data Science',  'DS303',  3, 'Third Year', 'Data Science'),
-        ('Data Visualization',   'DS304',  3, 'Third Year', 'Data Science'),
+        # Teacher 3 (Patil) → 4 DS subjects
+        ('Data Mining',             'DS301', 3, 'Third Year', 'Data Science'),
+        ('Statistical Analysis',    'DS302', 3, 'Third Year', 'Data Science'),
+        ('AI for Data Science',     'DS303', 3, 'Third Year', 'Data Science'),
+        ('Data Visualization',      'DS304', 3, 'Third Year', 'Data Science'),
 
-        # Nehal (4) → 2 IT 4th yr + 2 CSE 3rd yr
-        ('Cloud Computing', 'IT401',  4, 'Fourth Year', 'Information Technology'),
-        ('Cyber Security',  'IT402',  4, 'Fourth Year', 'Information Technology'),
-        ('Computer Networks','CSE305', 4, 'Third Year', 'Computer Science'),
-        ('Web Development', 'CSE306', 4, 'Third Year', 'Computer Science'),
+        # Teacher 4 (Nehal) → 4 IT subjects
+        ('Cloud Computing',         'IT401', 4, 'Fourth Year', 'Information Technology'),
+        ('Cyber Security',          'IT402', 4, 'Fourth Year', 'Information Technology'),
+        ('Computer Networks',       'IT403', 4, 'Fourth Year', 'Information Technology'),
+        ('Web Development',         'IT404', 4, 'Fourth Year', 'Information Technology'),
     ]
 )
 conn.commit()
-print("✅ Subjects inserted: 4 teachers x 4 subjects (2+2 per branch)")
+print("✅ Subjects: 4 teachers × 4 subjects each = 16 total")
 
-# ══ STUDENTS ══
+# ══════════════════════════════════════════════════════════════
+# ══ STUDENTS
+# ══════════════════════════════════════════════════════════════
 cse_students = [
     ('Rahul Sharma', 'CSE01','Third Year','Computer Science','student123','cse01@student.edu','9100000001'),
     ('Priya Patel',  'CSE02','Third Year','Computer Science','student123','cse02@student.edu','9100000002'),
@@ -130,6 +136,7 @@ cse_students = [
     ('Vikas Gupta',  'CSE09','Third Year','Computer Science','student123','cse09@student.edu','9100000009'),
     ('Anjali Desai', 'CSE10','Third Year','Computer Science','student123','cse10@student.edu','9100000010'),
 ]
+
 enc_students = [
     ('Arjun Patil',    'ENC01','Third Year','Electronics','student123','enc01@student.edu','9200000001'),
     ('Riya Kulkarni',  'ENC02','Third Year','Electronics','student123','enc02@student.edu','9200000002'),
@@ -142,6 +149,7 @@ enc_students = [
     ('Omkar Deshpande','ENC09','Third Year','Electronics','student123','enc09@student.edu','9200000009'),
     ('Ankita Salvi',   'ENC10','Third Year','Electronics','student123','enc10@student.edu','9200000010'),
 ]
+
 ds_students = [
     ('Tanmay More',    'DS01','Third Year','Data Science','student123','ds01@student.edu','9300000001'),
     ('Ishika Tiwari',  'DS02','Third Year','Data Science','student123','ds02@student.edu','9300000002'),
@@ -154,6 +162,7 @@ ds_students = [
     ('Rohan Sabale',   'DS09','Third Year','Data Science','student123','ds09@student.edu','9300000009'),
     ('Sayali Mane',    'DS10','Third Year','Data Science','student123','ds10@student.edu','9300000010'),
 ]
+
 it_raw = [
     ('IT02','Vaishnavi Hemant Bari'),('IT03','Atreyi Sanjoy Bhattacharyya'),
     ('IT05','Shruti Harichandra Bodke'),('IT06','Saniya Subodh Chavan'),
@@ -198,7 +207,7 @@ it_raw = [
 ]
 it_students = [
     (name, roll, 'Fourth Year', 'Information Technology', 'student123',
-     f"it{roll[2:]}@student.edu", f"9400{roll[2:].zfill(6)}")
+     f"it{roll[2:].lower()}@student.edu", f"9400{roll[2:].zfill(6)}")
     for roll, name in it_raw
 ]
 
@@ -210,104 +219,105 @@ c.executemany(
 conn.commit()
 print(f"✅ Students: CSE=10, ENC=10, DS=10, IT={len(it_students)} → Total={len(all_students)}")
 
-# ══ FETCH IDs ══
-def sids(branch):
-    return [r[0] for r in c.execute(
-        "SELECT id FROM students WHERE branch=? ORDER BY id",(branch,)).fetchall()]
+# ══════════════════════════════════════════════════════════════
+# ══ ENROLLMENTS — Each student enrolled in ALL 4 subjects of their branch
+# ══════════════════════════════════════════════════════════════
+def get_student_ids(branch):
+    return [r[0] for r in c.execute("SELECT id FROM students WHERE branch=? ORDER BY id", (branch,)).fetchall()]
 
-def subj_ids(teacher_id, branch):
-    return [r[0] for r in c.execute(
-        "SELECT id FROM subjects WHERE teacher_id=? AND branch=? ORDER BY id",(teacher_id,branch)).fetchall()]
+def get_subject_ids(teacher_id):
+    return [r[0] for r in c.execute("SELECT id FROM subjects WHERE teacher_id=? ORDER BY id", (teacher_id,)).fetchall()]
 
-cse_ids = sids('Computer Science')
-enc_ids = sids('Electronics')
-ds_ids  = sids('Data Science')
-it_ids  = sids('Information Technology')
+cse_student_ids = get_student_ids('Computer Science')
+enc_student_ids = get_student_ids('Electronics')
+ds_student_ids  = get_student_ids('Data Science')
+it_student_ids  = get_student_ids('Information Technology')
 
-sh_cse = subj_ids(1,'Computer Science')
-sh_ds  = subj_ids(1,'Data Science')
-ma_cse = subj_ids(2,'Computer Science')
-ma_enc = subj_ids(2,'Electronics')
-pa_enc = subj_ids(3,'Electronics')
-pa_ds  = subj_ids(3,'Data Science')
-ne_it  = subj_ids(4,'Information Technology')
-ne_cse = subj_ids(4,'Computer Science')
+cse_subject_ids = get_subject_ids(1)  # Shitole's 4 CSE subjects
+enc_subject_ids = get_subject_ids(2)  # Margi's 4 ENC subjects
+ds_subject_ids  = get_subject_ids(3)  # Patil's 4 DS subjects
+it_subject_ids  = get_subject_ids(4)  # Nehal's 4 IT subjects
 
-print(f"\nSubject IDs:")
-print(f"  Shitole→ CSE:{sh_cse} DS:{sh_ds}")
-print(f"  Margi  → CSE:{ma_cse} ENC:{ma_enc}")
-print(f"  Patil  → ENC:{pa_enc} DS:{pa_ds}")
-print(f"  Nehal  → IT:{ne_it}  CSE:{ne_cse}")
+enrollments = []
 
-# ══ ENROLLMENTS ══
-enr = []
-for sid in cse_ids:
-    for s in sh_cse + ma_cse + ne_cse:   # all 6 CSE subjects
-        enr.append((sid, s))
-for sid in enc_ids:
-    for s in ma_enc + pa_enc:             # all 4 ENC subjects
-        enr.append((sid, s))
-for sid in ds_ids:
-    for s in sh_ds + pa_ds:               # all 4 DS subjects
-        enr.append((sid, s))
-for sid in it_ids:
-    for s in ne_it:                        # 2 IT subjects
-        enr.append((sid, s))
+# Enroll all CSE students in all 4 CSE subjects
+for student_id in cse_student_ids:
+    for subject_id in cse_subject_ids:
+        enrollments.append((student_id, subject_id))
 
-c.executemany("INSERT OR IGNORE INTO enrollments (student_id,subject_id) VALUES (?,?)", enr)
+# Enroll all ENC students in all 4 ENC subjects
+for student_id in enc_student_ids:
+    for subject_id in enc_subject_ids:
+        enrollments.append((student_id, subject_id))
+
+# Enroll all DS students in all 4 DS subjects
+for student_id in ds_student_ids:
+    for subject_id in ds_subject_ids:
+        enrollments.append((student_id, subject_id))
+
+# Enroll all IT students in all 4 IT subjects
+for student_id in it_student_ids:
+    for subject_id in it_subject_ids:
+        enrollments.append((student_id, subject_id))
+
+c.executemany("INSERT OR IGNORE INTO enrollments (student_id,subject_id) VALUES (?,?)", enrollments)
 conn.commit()
-print(f"✅ Enrollments: {len(enr)} records")
+print(f"✅ Enrollments: {len(enrollments)} records (Each student = 4 subjects)")
 
-# ══ ATTENDANCE — 15 weekday dates ══
+# ══════════════════════════════════════════════════════════════
+# ══ ATTENDANCE — 15 weekday dates
+# ══════════════════════════════════════════════════════════════
 def get_dates(n=15):
     dates, d = [], datetime.now() - timedelta(days=1)
     while len(dates) < n:
-        if d.weekday() < 5:
+        if d.weekday() < 5:  # Monday=0, Friday=4
             dates.append(d.strftime('%Y-%m-%d'))
         d -= timedelta(days=1)
     return dates
 
 dates = get_dates(15)
 
-def gen_att(student_ids, subject_ids, teacher_id, seed=0):
+def generate_attendance(student_ids, subject_ids, teacher_id, seed=0):
     rng = random.Random(42 + seed)
-    recs = []
+    records = []
     for sid in student_ids:
-        tendency = rng.uniform(0.45, 0.97)
+        tendency = rng.uniform(0.50, 0.95)  # Each student's attendance tendency
         for subj in subject_ids:
             for date in dates:
                 status = 'Present' if rng.random() < tendency else 'Absent'
-                recs.append((sid, subj, date, status, teacher_id))
-    return recs
+                records.append((sid, subj, date, status, teacher_id))
+    return records
 
-att = []
-att += gen_att(cse_ids, sh_cse, 1, seed=0)
-att += gen_att(ds_ids,  sh_ds,  1, seed=1)
-att += gen_att(cse_ids, ma_cse, 2, seed=2)
-att += gen_att(enc_ids, ma_enc, 2, seed=3)
-att += gen_att(enc_ids, pa_enc, 3, seed=4)
-att += gen_att(ds_ids,  pa_ds,  3, seed=5)
-att += gen_att(it_ids,  ne_it,  4, seed=6)
-att += gen_att(cse_ids, ne_cse, 4, seed=7)
+attendance = []
+attendance += generate_attendance(cse_student_ids, cse_subject_ids, 1, seed=0)
+attendance += generate_attendance(enc_student_ids, enc_subject_ids, 2, seed=1)
+attendance += generate_attendance(ds_student_ids, ds_subject_ids, 3, seed=2)
+attendance += generate_attendance(it_student_ids, it_subject_ids, 4, seed=3)
 
 c.executemany(
     "INSERT OR IGNORE INTO attendance (student_id,subject_id,date,status,marked_by) VALUES (?,?,?,?,?)",
-    att
+    attendance
 )
 conn.commit()
 conn.close()
 
-print(f"\n🎉 DATABASE FULLY READY!")
-print(f"{'─'*60}")
-print(f"  👩‍🏫 Teachers   : 4")
-print(f"  📚 Subjects   : 16  (each teacher = 2 subjects × 2 branches)")
-print(f"  🎓 Students   : {len(all_students)}  (CSE=10, ENC=10, DS=10, IT={len(it_students)})")
-print(f"  📅 Attendance : {len(att)} records  ({len(dates)} class dates)")
-print(f"{'─'*60}")
-print(f"\n📋 TEACHER LOGINS  (password: teacher123)")
-print(f"  shitole@college.com → Machine Learning, Digital Electronics (CSE) + Data Mining, Statistical Analysis (DS)")
-print(f"  margi@college.com   → DSA, OOPs (CSE) + Signals & Systems, Microcontrollers (ENC)")
-print(f"  patil@college.com   → Analog Electronics, Comm Systems (ENC) + AI for DS, Data Visualization (DS)")
-print(f"  nehal@college.com   → Cloud Computing, Cyber Security (IT) + Computer Networks, Web Dev (CSE)")
-print(f"\n📋 STUDENT LOGINS  (password: student123)")
-print(f"  CSE01-CSE10 | ENC01-ENC10 | DS01-DS10 | IT02-IT83")
+print(f"\n{'='*70}")
+print(f"🎉 DATABASE READY!")
+print(f"{'='*70}")
+print(f"  👩‍🏫 Teachers    : 4")
+print(f"  📚 Subjects    : 16  (4 per teacher, same branch)")
+print(f"  🎓 Students    : {len(all_students)}  (CSE=10, ENC=10, DS=10, IT={len(it_students)})")
+print(f"  📋 Enrollments : {len(enrollments)}  (Each student = 4 subjects)")
+print(f"  📅 Attendance  : {len(attendance)} records  ({len(dates)} class dates)")
+print(f"{'='*70}")
+print(f"\n📌 TEACHER LOGINS (password: teacher123)")
+print(f"  shitole@college.com → 4 CSE subjects (Machine Learning, Data Structures, DBMS, Software Eng)")
+print(f"  margi@college.com   → 4 ENC subjects (Digital Electronics, Signals, Microcontrollers, Comm)")
+print(f"  patil@college.com   → 4 DS subjects (Data Mining, Stats, AI for DS, Visualization)")
+print(f"  nehal@college.com   → 4 IT subjects (Cloud, Cyber Security, Networks, Web Dev)")
+print(f"\n📌 STUDENT LOGINS (password: student123)")
+print(f"  CSE: CSE01-CSE10  (each has 4 CSE subjects)")
+print(f"  ENC: ENC01-ENC10  (each has 4 ENC subjects)")
+print(f"  DS:  DS01-DS10    (each has 4 DS subjects)")
+print(f"  IT:  IT02-IT83    (each has 4 IT subjects)")
+print(f"{'='*70}\n")
