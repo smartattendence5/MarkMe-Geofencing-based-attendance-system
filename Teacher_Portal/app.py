@@ -297,20 +297,15 @@ def generate_report(subject_id):
     if not subject:
         flash("Subject not found", "error")
         return redirect(url_for('teacher_dashboard'))
-
-    # FIX: Global total_classes for subject — same denominator for all students
-    total_classes = conn.execute(
-        "SELECT COUNT(DISTINCT date) as cnt FROM attendance WHERE subject_id=?",
-        (subject_id,)).fetchone()['cnt'] or 0
-
     students_summary = conn.execute("""
         SELECT
             s.roll_no, s.name,
             COUNT(CASE WHEN a.status = 'Present' THEN 1 END) as present_count,
             COUNT(CASE WHEN a.status = 'Absent' THEN 1 END) as absent_count,
+            COUNT(DISTINCT a.date) as total_classes,
             ROUND(
                 CAST(COUNT(CASE WHEN a.status = 'Present' THEN 1 END) AS FLOAT) * 100.0 /
-                NULLIF(?, 0), 2
+                NULLIF(COUNT(DISTINCT a.date), 0), 2
             ) as attendance_percentage
         FROM students s
         JOIN enrollments e ON s.id = e.student_id
@@ -318,11 +313,9 @@ def generate_report(subject_id):
         WHERE e.subject_id = ?
         GROUP BY s.id, s.roll_no, s.name
         ORDER BY s.roll_no
-    """, (total_classes, subject_id, subject_id)).fetchall()
+    """, (subject_id, subject_id)).fetchall()
     conn.close()
-    return render_template('generate_report.html', subject=subject,
-        students_summary=students_summary, total_classes=total_classes)
-
+    return render_template('generate_report.html', subject=subject, students_summary=students_summary)
 # ========== STUDENT LOGIN ==========
 @app.route('/student_login', methods=['GET', 'POST'])
 def student_login():
