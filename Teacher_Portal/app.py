@@ -185,15 +185,24 @@ def take_attendance(subject_id):
         VALUES (?, ?, ?)
     """, (session['teacher_id'], teacher_lat, teacher_lon))
     conn.commit()
+
+    # FIX: Delete expired session before creating new one (prevents cross-subject bleed)
+    conn.execute("""
+        DELETE FROM active_attendance_sessions
+        WHERE subject_id=? AND teacher_id=? AND date=? AND end_time <= datetime('now')
+    """, (subject_id, session['teacher_id'], today))
+    conn.commit()
+
     active_session = conn.execute("""
         SELECT * FROM active_attendance_sessions
         WHERE subject_id=? AND teacher_id=? AND date=? AND end_time > datetime('now')
     """, (subject_id, session['teacher_id'], today)).fetchone()
+
     if not active_session:
         conn.execute("""
             INSERT INTO active_attendance_sessions
             (subject_id, teacher_id, teacher_latitude, teacher_longitude, date, end_time)
-            VALUES (?, ?, ?, ?, ?, datetime('now', '+1 hour'))
+            VALUES (?, ?, ?, ?, ?, datetime('now', '+2 hours'))
         """, (subject_id, session['teacher_id'], teacher_lat, teacher_lon, today))
         enrolled_students = conn.execute(
             "SELECT student_id FROM enrollments WHERE subject_id=?", (subject_id,)).fetchall()
@@ -207,6 +216,7 @@ def take_attendance(subject_id):
                     VALUES (?, ?, ?, 'Absent', ?)
                 """, (student['student_id'], subject_id, today, session['teacher_id']))
         conn.commit()
+
     students = conn.execute("""
         SELECT s.id, s.roll_no, s.name,
         COALESCE(a.status, 'Absent') AS status
@@ -264,6 +274,7 @@ def view_attendance(subject_id):
     if not subject:
         flash("Subject not found", "error")
         return redirect(url_for('teacher_dashboard'))
+    # FIX: GROUP BY student_id + date — no duplicate rows
     attendance_records = conn.execute("""
         SELECT s.roll_no, s.name, a.date, a.status
         FROM attendance a
@@ -286,15 +297,20 @@ def generate_report(subject_id):
     if not subject:
         flash("Subject not found", "error")
         return redirect(url_for('teacher_dashboard'))
+
+    # FIX: Global total_classes for subject — same denominator for all students
+    total_classes = conn.execute(
+        "SELECT COUNT(DISTINCT date) as cnt FROM attendance WHERE subject_id=?",
+        (subject_id,)).fetchone()['cnt'] or 0
+
     students_summary = conn.execute("""
         SELECT
             s.roll_no, s.name,
             COUNT(CASE WHEN a.status = 'Present' THEN 1 END) as present_count,
             COUNT(CASE WHEN a.status = 'Absent' THEN 1 END) as absent_count,
-            COUNT(DISTINCT a.date) as total_classes,
             ROUND(
                 CAST(COUNT(CASE WHEN a.status = 'Present' THEN 1 END) AS FLOAT) * 100.0 /
-                NULLIF(COUNT(DISTINCT a.date), 0), 2
+                NULLIF(?, 0), 2
             ) as attendance_percentage
         FROM students s
         JOIN enrollments e ON s.id = e.student_id
@@ -302,9 +318,10 @@ def generate_report(subject_id):
         WHERE e.subject_id = ?
         GROUP BY s.id, s.roll_no, s.name
         ORDER BY s.roll_no
-    """, (subject_id, subject_id)).fetchall()
+    """, (total_classes, subject_id, subject_id)).fetchall()
     conn.close()
-    return render_template('generate_report.html', subject=subject, students_summary=students_summary)
+    return render_template('generate_report.html', subject=subject,
+        students_summary=students_summary, total_classes=total_classes)
 
 # ========== STUDENT LOGIN ==========
 @app.route('/student_login', methods=['GET', 'POST'])
@@ -394,15 +411,28 @@ def student_attendance():
     conn.close()
     return render_template('student_attendance.html', student=student, attendance_records=attendance_records)
 
-# ========== CHATBOT ROUTE ==========
+# ========== LOGOUT ==========
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("Logged out!", "info")
+    return redirect(url_for('home_page'))
+
+
+# =====================================================================
+# CHATBOT ROUTE
+# FIX: Teacher check PEHLE hota hai — student check baad mein
+# FIX: Response HTML format mein hai jo teacher.html ka formatResponse() handle karta hai
+# FIX: Sab keywords properly match hote hain
+# =====================================================================
 @app.route('/chatbot', methods=['POST'])
 def chatbot():
     data = request.get_json()
     question = data.get('question', '').lower().strip()
 
-    # Determine if it's teacher or student session
+    # ✅ FIX: Teacher check PEHLE — student baad mein
     is_teacher = 'teacher_id' in session
-    is_student = 'student_id' in session
+    is_student = 'student_id' in session and not is_teacher  # student tabhi jab teacher nahi
 
     if not is_teacher and not is_student:
         return jsonify({"response": "⚠️ Please login to use the assistant."})
@@ -413,141 +443,10 @@ def chatbot():
 
     try:
         # ============================================================
-        # STUDENT CHATBOT
+        # TEACHER CHATBOT — pehle check hoga
         # ============================================================
-        if is_student:
-            student_id = session['student_id']
-
-            # Fetch all subjects for student
-            subjects = conn.execute("""
-                SELECT s.id, s.subject_name, s.subject_code, t.name as teacher_name
-                FROM subjects s
-                JOIN enrollments e ON s.id = e.subject_id
-                JOIN teachers t ON s.teacher_id = t.id
-                WHERE e.student_id = ?
-            """, (student_id,)).fetchall()
-
-            # ---- Attendance percentage ----
-            if any(k in question for k in ['attendance percentage', 'attendance %', 'my attendance', 'percent', 'percentage']):
-                if not subjects:
-                    response = "📚 You are not enrolled in any subjects yet."
-                else:
-                    lines = ["📊 <strong>Your Attendance Summary:</strong><br><br>"]
-                    for sub in subjects:
-                        total = conn.execute(
-                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
-                            (sub['id'],)).fetchone()[0]
-                        present = conn.execute(
-                            "SELECT COUNT(*) FROM attendance WHERE subject_id=? AND student_id=? AND status='Present'",
-                            (sub['id'], student_id)).fetchone()[0]
-                        pct = round((present / total * 100), 1) if total > 0 else 0
-                        color = "#28a745" if pct >= 75 else "#ffc107" if pct >= 60 else "#dc3545"
-                        icon = "✅" if pct >= 75 else "⚠️" if pct >= 60 else "❌"
-                        lines.append(f"{icon} <strong>{sub['subject_name']}</strong>: "
-                                     f"<span style='color:{color};font-weight:bold;'>{pct}%</span> "
-                                     f"({present}/{total} classes)<br>")
-                    response = "".join(lines)
-
-            # ---- Today's status ----
-            elif any(k in question for k in ['today', 'today status', "today's status", 'aaj']):
-                if not subjects:
-                    response = "📚 You are not enrolled in any subjects."
-                else:
-                    lines = [f"📅 <strong>Today's Attendance ({today}):</strong><br><br>"]
-                    found_any = False
-                    for sub in subjects:
-                        record = conn.execute("""
-                            SELECT status FROM attendance
-                            WHERE student_id=? AND subject_id=? AND date=?
-                        """, (student_id, sub['id'], today)).fetchone()
-                        if record:
-                            found_any = True
-                            icon = "✅" if record['status'] == 'Present' else "❌"
-                            lines.append(f"{icon} <strong>{sub['subject_name']}</strong>: {record['status']}<br>")
-                    if not found_any:
-                        lines.append("No attendance has been marked for today yet.")
-                    response = "".join(lines)
-
-            # ---- 75% requirement ----
-            elif any(k in question for k in ['75', 'requirement', 'need', 'how many classes', 'classes needed']):
-                if not subjects:
-                    response = "📚 You are not enrolled in any subjects."
-                else:
-                    lines = ["🎯 <strong>Classes Needed to Reach 75% Attendance:</strong><br><br>"]
-                    for sub in subjects:
-                        total = conn.execute(
-                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
-                            (sub['id'],)).fetchone()[0]
-                        present = conn.execute(
-                            "SELECT COUNT(*) FROM attendance WHERE subject_id=? AND student_id=? AND status='Present'",
-                            (sub['id'], student_id)).fetchone()[0]
-                        pct = round((present / total * 100), 1) if total > 0 else 0
-                        if pct >= 75:
-                            lines.append(f"✅ <strong>{sub['subject_name']}</strong>: Already at {pct}% — Great job!<br>")
-                        else:
-                            # Calculate classes needed
-                            needed = 0
-                            temp_p, temp_t = present, total
-                            while temp_t > 0 and round(temp_p / temp_t * 100, 1) < 75:
-                                temp_p += 1
-                                temp_t += 1
-                                needed += 1
-                            lines.append(f"⚠️ <strong>{sub['subject_name']}</strong>: Currently {pct}% — "
-                                         f"Attend next <strong>{needed}</strong> consecutive class(es) to reach 75%.<br>")
-                    response = "".join(lines)
-
-            # ---- Total classes ----
-            elif any(k in question for k in ['total classes', 'how many total', 'total class']):
-                if not subjects:
-                    response = "📚 No subjects enrolled."
-                else:
-                    lines = ["📚 <strong>Total Classes Per Subject:</strong><br><br>"]
-                    for sub in subjects:
-                        total = conn.execute(
-                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
-                            (sub['id'],)).fetchone()[0]
-                        lines.append(f"📖 <strong>{sub['subject_name']}</strong>: {total} class(es) held so far<br>")
-                    response = "".join(lines)
-
-            # ---- Lowest attendance subject ----
-            elif any(k in question for k in ['lowest', 'worst', 'bad attendance', 'low attendance']):
-                if not subjects:
-                    response = "📚 No subjects enrolled."
-                else:
-                    results = []
-                    for sub in subjects:
-                        total = conn.execute(
-                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
-                            (sub['id'],)).fetchone()[0]
-                        present = conn.execute(
-                            "SELECT COUNT(*) FROM attendance WHERE subject_id=? AND student_id=? AND status='Present'",
-                            (sub['id'], student_id)).fetchone()[0]
-                        pct = round((present / total * 100), 1) if total > 0 else 0
-                        results.append((sub['subject_name'], pct, present, total))
-                    results.sort(key=lambda x: x[1])
-                    worst = results[0]
-                    response = (f"📉 <strong>Lowest Attendance Subject:</strong><br><br>"
-                                f"❌ <strong>{worst[0]}</strong> with only "
-                                f"<span style='color:#dc3545;font-weight:bold;'>{worst[1]}%</span> "
-                                f"({worst[2]}/{worst[3]} classes)<br><br>"
-                                f"Please focus on attending this subject regularly!")
-            else:
-                response = (
-                    "🤖 <strong>I can help you with:</strong><br><br>"
-                    "📊 <em>Attendance percentage</em> — your subject-wise %<br>"
-                    "📅 <em>Today's status</em> — present/absent today<br>"
-                    "🎯 <em>75% requirement</em> — classes needed<br>"
-                    "📚 <em>Total classes</em> — classes held per subject<br>"
-                    "📉 <em>Lowest attendance</em> — your weakest subject<br><br>"
-                    "Please ask one of the above!"
-                )
-
-        # ============================================================
-        # TEACHER CHATBOT
-        # ============================================================
-        elif is_teacher:
+        if is_teacher:
             teacher_id = session['teacher_id']
-
             subjects = conn.execute(
                 "SELECT * FROM subjects WHERE teacher_id=?", (teacher_id,)).fetchall()
 
@@ -558,13 +457,13 @@ def chatbot():
                 else:
                     lines = ["📊 <strong>Overall Attendance Statistics:</strong><br><br>"]
                     for sub in subjects:
-                        total_students = conn.execute("""
-                            SELECT COUNT(*) FROM enrollments WHERE subject_id=?
-                        """, (sub['id'],)).fetchone()[0]
-                        total_classes = conn.execute("""
-                            SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?
-                        """, (sub['id'],)).fetchone()[0]
-                        avg_pct = conn.execute("""
+                        total_students = conn.execute(
+                            "SELECT COUNT(*) FROM enrollments WHERE subject_id=?",
+                            (sub['id'],)).fetchone()[0]
+                        total_classes = conn.execute(
+                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
+                            (sub['id'],)).fetchone()[0]
+                        avg_row = conn.execute("""
                             SELECT AVG(pct) FROM (
                                 SELECT student_id,
                                 ROUND(CAST(SUM(CASE WHEN status='Present' THEN 1 ELSE 0 END) AS FLOAT)
@@ -573,7 +472,7 @@ def chatbot():
                                 GROUP BY student_id
                             )
                         """, (sub['id'],)).fetchone()[0]
-                        avg_pct = round(avg_pct, 1) if avg_pct else 0
+                        avg_pct = round(avg_row, 1) if avg_row else 0
                         color = "#28a745" if avg_pct >= 75 else "#ffc107" if avg_pct >= 60 else "#dc3545"
                         lines.append(
                             f"📖 <strong>{sub['subject_name']}</strong> ({sub['subject_code']})<br>"
@@ -601,7 +500,7 @@ def chatbot():
                         total = present + absent
                         if total > 0:
                             found_any = True
-                            pct = round(present / total * 100, 1) if total > 0 else 0
+                            pct = round(present / total * 100, 1)
                             lines.append(
                                 f"📖 <strong>{sub['subject_name']}</strong>: "
                                 f"✅ {present} Present | ❌ {absent} Absent | "
@@ -612,7 +511,7 @@ def chatbot():
                     response = "".join(lines)
 
             # ---- Low attendance students ----
-            elif any(k in question for k in ['low attendance', 'below 75', 'defaulter', 'at risk', 'warning']):
+            elif any(k in question for k in ['low', 'below 75', 'defaulter', 'at risk', 'warning', 'percent']):
                 if not subjects:
                     response = "📚 No subjects found."
                 else:
@@ -644,7 +543,7 @@ def chatbot():
                     response = "".join(lines)
 
             # ---- Subject-wise report ----
-            elif any(k in question for k in ['subject', 'subject wise', 'subject report', 'subject-wise']):
+            elif any(k in question for k in ['subject', 'subject wise', 'report', 'subject-wise']):
                 if not subjects:
                     response = "📚 No subjects found."
                 else:
@@ -654,13 +553,12 @@ def chatbot():
                             "SELECT COUNT(*) FROM enrollments WHERE subject_id=?", (sub['id'],)).fetchone()[0]
                         total_classes = conn.execute(
                             "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?", (sub['id'],)).fetchone()[0]
-                        present_today = conn.execute("""
-                            SELECT COUNT(*) FROM attendance
-                            WHERE subject_id=? AND status='Present'
-                        """, (sub['id'],)).fetchone()[0]
+                        present_total = conn.execute(
+                            "SELECT COUNT(*) FROM attendance WHERE subject_id=? AND status='Present'",
+                            (sub['id'],)).fetchone()[0]
                         total_records = conn.execute(
                             "SELECT COUNT(*) FROM attendance WHERE subject_id=?", (sub['id'],)).fetchone()[0]
-                        overall_pct = round(present_today / total_records * 100, 1) if total_records > 0 else 0
+                        overall_pct = round(present_total / total_records * 100, 1) if total_records > 0 else 0
                         color = "#28a745" if overall_pct >= 75 else "#ffc107" if overall_pct >= 60 else "#dc3545"
                         lines.append(
                             f"📖 <strong>{sub['subject_name']}</strong> ({sub['subject_code']})<br>"
@@ -669,29 +567,161 @@ def chatbot():
                         )
                     response = "".join(lines)
 
+            # ---- Default teacher help ----
             else:
                 response = (
-                    "🤖 <strong>I can help you with:</strong><br><br>"
+                    "🤖 <strong>Teacher Assistant — I can help with:</strong><br><br>"
                     "📊 <em>Overall statistics</em> — subject-wise overview<br>"
                     "📅 <em>Today's attendance</em> — present/absent count<br>"
                     "⚠️ <em>Low attendance</em> — students below 75%<br>"
                     "📚 <em>Subject report</em> — detailed per-subject data<br><br>"
+                    "Please select a quick button or type your question!"
+                )
+
+        # ============================================================
+        # STUDENT CHATBOT — baad mein check hoga
+        # ============================================================
+        elif is_student:
+            student_id = session['student_id']
+            subjects = conn.execute("""
+                SELECT s.id, s.subject_name, s.subject_code, t.name as teacher_name
+                FROM subjects s
+                JOIN enrollments e ON s.id = e.subject_id
+                JOIN teachers t ON s.teacher_id = t.id
+                WHERE e.student_id = ?
+            """, (student_id,)).fetchall()
+
+            # ---- Attendance percentage ----
+            if any(k in question for k in ['attendance percentage', 'attendance %', 'my attendance',
+                                            'percent', 'percentage', 'kitni hai', 'how much']):
+                if not subjects:
+                    response = "📚 You are not enrolled in any subjects yet."
+                else:
+                    lines = ["📊 <strong>Your Attendance Summary:</strong><br><br>"]
+                    for sub in subjects:
+                        total = conn.execute(
+                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
+                            (sub['id'],)).fetchone()[0]
+                        present = conn.execute(
+                            "SELECT COUNT(*) FROM attendance WHERE subject_id=? AND student_id=? AND status='Present'",
+                            (sub['id'], student_id)).fetchone()[0]
+                        pct = round((present / total * 100), 1) if total > 0 else 0
+                        color = "#28a745" if pct >= 75 else "#ffc107" if pct >= 60 else "#dc3545"
+                        icon = "✅" if pct >= 75 else "⚠️" if pct >= 60 else "❌"
+                        lines.append(
+                            f"{icon} <strong>{sub['subject_name']}</strong>: "
+                            f"<span style='color:{color};font-weight:bold;'>{pct}%</span> "
+                            f"({present}/{total} classes)<br>"
+                        )
+                    response = "".join(lines)
+
+            # ---- Today's status ----
+            elif any(k in question for k in ['today', 'today status', "today's status", 'aaj', 'status today']):
+                if not subjects:
+                    response = "📚 You are not enrolled in any subjects."
+                else:
+                    lines = [f"📅 <strong>Today's Attendance ({today}):</strong><br><br>"]
+                    found_any = False
+                    for sub in subjects:
+                        record = conn.execute("""
+                            SELECT status FROM attendance
+                            WHERE student_id=? AND subject_id=? AND date=?
+                        """, (student_id, sub['id'], today)).fetchone()
+                        if record:
+                            found_any = True
+                            icon = "✅" if record['status'] == 'Present' else "❌"
+                            lines.append(f"{icon} <strong>{sub['subject_name']}</strong>: {record['status']}<br>")
+                    if not found_any:
+                        lines.append("No attendance has been marked for today yet.")
+                    response = "".join(lines)
+
+            # ---- 75% requirement ----
+            elif any(k in question for k in ['75', 'requirement', 'need', 'how many classes', 'classes needed',
+                                              'kitni classes', 'chahiye']):
+                if not subjects:
+                    response = "📚 You are not enrolled in any subjects."
+                else:
+                    lines = ["🎯 <strong>Classes Needed to Reach 75% Attendance:</strong><br><br>"]
+                    for sub in subjects:
+                        total = conn.execute(
+                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
+                            (sub['id'],)).fetchone()[0]
+                        present = conn.execute(
+                            "SELECT COUNT(*) FROM attendance WHERE subject_id=? AND student_id=? AND status='Present'",
+                            (sub['id'], student_id)).fetchone()[0]
+                        pct = round((present / total * 100), 1) if total > 0 else 0
+                        if pct >= 75:
+                            lines.append(f"✅ <strong>{sub['subject_name']}</strong>: Already {pct}% — Great job!<br>")
+                        else:
+                            temp_p, temp_t, needed = present, total, 0
+                            while temp_t > 0 and round(temp_p / temp_t * 100, 1) < 75:
+                                temp_p += 1
+                                temp_t += 1
+                                needed += 1
+                            lines.append(
+                                f"⚠️ <strong>{sub['subject_name']}</strong>: Currently {pct}% — "
+                                f"Attend next <strong>{needed}</strong> class(es) to reach 75%.<br>"
+                            )
+                    response = "".join(lines)
+
+            # ---- Total classes ----
+            elif any(k in question for k in ['total classes', 'how many total', 'total class', 'kitni class']):
+                if not subjects:
+                    response = "📚 No subjects enrolled."
+                else:
+                    lines = ["📚 <strong>Total Classes Per Subject:</strong><br><br>"]
+                    for sub in subjects:
+                        total = conn.execute(
+                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
+                            (sub['id'],)).fetchone()[0]
+                        lines.append(f"📖 <strong>{sub['subject_name']}</strong>: {total} class(es) held so far<br>")
+                    response = "".join(lines)
+
+            # ---- Lowest attendance subject ----
+            elif any(k in question for k in ['lowest', 'worst', 'bad attendance', 'low attendance',
+                                              'sabse kam', 'minimum']):
+                if not subjects:
+                    response = "📚 No subjects enrolled."
+                else:
+                    results = []
+                    for sub in subjects:
+                        total = conn.execute(
+                            "SELECT COUNT(DISTINCT date) FROM attendance WHERE subject_id=?",
+                            (sub['id'],)).fetchone()[0]
+                        present = conn.execute(
+                            "SELECT COUNT(*) FROM attendance WHERE subject_id=? AND student_id=? AND status='Present'",
+                            (sub['id'], student_id)).fetchone()[0]
+                        pct = round((present / total * 100), 1) if total > 0 else 0
+                        results.append((sub['subject_name'], pct, present, total))
+                    results.sort(key=lambda x: x[1])
+                    worst = results[0]
+                    response = (
+                        f"📉 <strong>Lowest Attendance Subject:</strong><br><br>"
+                        f"❌ <strong>{worst[0]}</strong> with only "
+                        f"<span style='color:#dc3545;font-weight:bold;'>{worst[1]}%</span> "
+                        f"({worst[2]}/{worst[3]} classes)<br><br>"
+                        f"Please focus on attending this subject regularly!"
+                    )
+
+            # ---- Default student help ----
+            else:
+                response = (
+                    "🤖 <strong>I can help you with:</strong><br><br>"
+                    "📊 <em>Attendance percentage</em> — your subject-wise %<br>"
+                    "📅 <em>Today's status</em> — present/absent today<br>"
+                    "🎯 <em>75% requirement</em> — classes needed<br>"
+                    "📚 <em>Total classes</em> — classes held per subject<br>"
+                    "📉 <em>Lowest attendance</em> — your weakest subject<br><br>"
                     "Please ask one of the above!"
                 )
 
     except Exception as e:
-        response = f"❌ Error fetching data: {str(e)}"
+        response = f"❌ Error: {str(e)}"
     finally:
         conn.close()
 
     return jsonify({"response": response})
 
-# ========== LOGOUT ==========
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash("Logged out!", "info")
-    return redirect(url_for('home_page'))
 
 if __name__ == "__main__":
     print("\n" + "="*60)
